@@ -7,10 +7,11 @@ function valid(x){return x&&x.v===1&&typeof x.sound==='boolean'&&x.best&&x.seen&
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){alert('تَعَذَّرَ حِفْظُ التَّقَدُّمِ. قَدْ تَكُونُ مِسَاحَةُ الْجِهَازِ مُمْتَلِئَةً.');}}
 function el(tag,text,cls){const e=document.createElement(tag);if(text!==null&&text!==undefined)e.textContent=digits(arText(text));if(cls)e.className=cls;return e;}
 function add(parent,...children){children.forEach(c=>parent.append(c));return parent;}
-function button(text,fn,cls){const b=el('button',text,cls);b.onclick=fn;return b;}
+function button(text,fn,cls){const b=el('button',text,cls);b.onclick=(...args)=>{playEffect('tap');return fn(...args);};return b;}
+let audioCtx;function playEffect(kind){if(!state.sound)return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;audioCtx=audioCtx||new Audio();if(audioCtx.state==='suspended')audioCtx.resume();const tones=kind==='correct'?[523,659,784]:kind==='wrong'?[310,240]:[600];tones.forEach((hz,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),start=audioCtx.currentTime+i*.09;osc.type='sine';osc.frequency.value=hz;gain.gain.setValueAtTime(.001,start);gain.gain.exponentialRampToValueAtTime(.09,start+.01);gain.gain.exponentialRampToValueAtTime(.001,start+.095);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(start);osc.stop(start+.11);});}catch(ignore){}}
 function reset(m){mode=m;root.replaceChildren();window.scrollTo(0,0);stopSpeech();}
 function stopSpeech(){if(window.Android)Android.stop();else if(window.speechSynthesis)speechSynthesis.cancel();}
-function speak(text,lang='ar'){if(!state.sound)return;text=speechText(text,lang);if(window.Android){Android.speak(text,lang);return;}if(window.speechSynthesis){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang==='en'?'en-GB':'ar';u.rate=.9;speechSynthesis.speak(u);}}
+function speak(text,lang='ar'){if(!state.sound)return;text=speechText(text,lang);if(window.Android){Android.speak(text,lang);return;}if(window.speechSynthesis){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang==='en'?'en-GB':'ar';u.rate=1.05;speechSynthesis.speak(u);}}
 function total(){return Object.values(state.best).reduce((a,b)=>a+b,0);}
 function key(){return current.lesson.id;}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -46,9 +47,9 @@ function showQuestion(){
   const holder=el('div',null,'answer-card');
   const b=button('',()=>{
    if(answered)return;
-   if(opt===c.answer){answered=true;if(misses===0)score++;b.classList.add('correct');feedback.textContent=arText('أَحْسَنْتِ يَا رُقَيَّة! 🌟');speak('أَحْسَنْتِ يَا رُقَيَّة');choices.querySelectorAll('.choice').forEach(x=>x.disabled=true);
+   if(opt===c.answer){playEffect('correct');answered=true;if(misses===0)score++;b.classList.add('correct');feedback.textContent=arText('أَحْسَنْتِ يَا رُقَيَّة! 🌟');speak('أَحْسَنْتِ يَا رُقَيَّة. الْإِجَابَةُ '+speechText(c.answer,c.lang),'ar');choices.querySelectorAll('.choice').forEach(x=>x.disabled=true);
     root.append(button(qi===questions.length-1?'اِكْتَشِفِي إِنْجَازَكِ 🎉':'التَّالِي ←',()=>{qi++;if(qi===questions.length)finish();else showQuestion();},'primary'));
-   }else{misses++;b.disabled=true;b.classList.add('wrong');feedback.textContent=arText('مُحَاوَلَةٌ جَمِيلَةٌ، جَرِّبِي مَرَّةً أُخْرَى 💛');speak('جَرِّبِي مَرَّةً أُخْرَى');}
+   }else{playEffect('wrong');misses++;b.disabled=true;b.classList.add('wrong');feedback.textContent=arText('مُحَاوَلَةٌ جَمِيلَةٌ، جَرِّبِي مَرَّةً أُخْرَى 💛');speak('جَرِّبِي مَرَّةً أُخْرَى');}
   },'choice');b.dataset.answer=opt;
   const number=el('span',i+1,'answer-number');number.setAttribute('aria-hidden','true');b.append(number);
   const picture=optionPicture(opt);if(picture){const e=el('span',picture,'answer-picture');e.setAttribute('aria-hidden','true');b.append(e);}
@@ -74,7 +75,7 @@ function speechText(text,lang='ar'){
  if(LETTER_NAMES[text])return LETTER_NAMES[text];
  for(const [symbol,word] of Object.entries(EMOJI_WORDS))text=text.split(symbol).join(' '+word+' ');
  text=text.replace(/[٠-٩]/g,n=>'٠١٢٣٤٥٦٧٨٩'.indexOf(n)).replace(/\d+/g,n=>AR_NUMBERS[Number(n)]||n).replace(/\+/g,' زَائِد ').replace(/[−-]/g,' نَاقِص ').replace(/=/g,' يُسَاوِي ').replace(/؟/g,'؟ ');
- text=arText(text).replace(/رُقَيَّة/g,'رُقَيَّهْ').replace(/رقية/g,'رُقَيَّهْ');
+ text=arText(text).replace(/بَطَّة/g,'بَطَّهْ').replace(/رُقَيَّة/g,'رُقَيَّهْ').replace(/رقية/g,'رُقَيَّهْ');
  return text.replace(/[^\u0600-\u06ff\s.,!:]/g,' ').replace(/\s+/g,' ').trim();
 }
 function optionSpeech(opt,i,lang){const prefix=lang==='en'?'Option '+(i+1):'الْخِيَارُ '+['','الْأَوَّل','الثَّانِي','الثَّالِث','الرَّابِع','الْخَامِس','السَّادِس'][i+1];return prefix+'. '+speechText(opt,lang)+'.';}
@@ -85,7 +86,7 @@ function questionSpeech(c,options){
  if(current.lesson.id==='colors')question='مَا اسْمُ اللَّوْنِ الْمَعْرُوضِ؟';
  return speechText(question,c.lang)+'. '+options.map((opt,i)=>optionSpeech(opt,i,c.lang)).join(' ... ');
 }
-function lessonSpeech(c){if(current.lesson.id==='add')return arText(c.word);if(current.subject.id==='arabic'&&LETTER_NAMES[c.front])return LETTER_NAMES[c.front]+'. '+arText(c.word);if(current.lesson.id.startsWith('num'))return AR_NUMBERS[Number(c.front)];return c.word+'. '+c.detail;}
+function lessonSpeech(c){if(current.lesson.id==='add')return arText(c.word);if(current.subject.id==='arabic'){if(LETTER_NAMES[c.front])return LETTER_NAMES[c.front]+'. '+c.word+'. '+c.word;if(current.lesson.id==='vowels')return 'الْحَرْفُ '+c.front+'. '+c.word+'. '+c.detail;}if(c.lang==='en'&&/^[A-Z] [a-z]$/.test(c.front)){const letter=c.front[0];return letter+'. '+c.word+'. '+letter+' is for '+c.word+'.';}if(current.lesson.id.startsWith('num'))return AR_NUMBERS[Number(c.front)];return c.word+'. '+c.detail;}
 function patternVisual(){const box=el('div',null,'pattern-row');box.dir='ltr';['🔴','🔵','🔴','🔵','؟'].forEach(x=>box.append(el('span',x)));return box;}
 function cardVisual(c){
  if(current.lesson.id==='add'){
@@ -93,6 +94,7 @@ function cardVisual(c){
   parts.forEach((part,i)=>{const e=el('span',part,i===1?'operator':'apple-group');box.append(e);});return box;
  }
  if(c.front==='🔴 🔵 🔴 🔵')return patternVisual();
+ if(current.lesson.id==='compare'){const box=el('div',null,'compare-pair');box.dir='ltr';for(const part of c.front.trim().split(/\s+/))box.append(el('span',part,'compare-item'));return box;}
  const box=el('div',c.front,'big'+(current.lesson.id==='compare'?' compare-visual':''));box.dir=c.lang==='en'||current.subject.id==='math'?'ltr':'auto';return box;
 }
 function optionPicture(opt){return {'أغسل يدي':'🧼 👐','بفرشاة ومعجون':'🪥','بلعبة':'🧸','وجبة متنوعة':'🥗 🍎','مع شخص بالغ':'👩‍👧','في الماء':'💧','في العش':'🪺','في الصحراء':'🏜️','في البحر':'🌊','في الكوب':'🥛','في النهار':'☀️','في منتصف الليل':'🌙','في الخريف':'🍂','في الصيف':'☀️','أعتذر':'🤝','من فضلك':'🙏','أرتب ألعابي':'🧸 📦','أتركها على الأرض':'🧸 🧩','أغسل يدي':'🧼 👐','ألمس الأرض':'🖐️','نتبادل الأدوار':'👧 🤝 👧','آخذ كل الألعاب':'🧸 🧸','فرشاة ومعجون':'🪥','لعبة':'🧸','متنوعة':'🥗 🍎','حلوى فقط':'🍬 🍬','مع شخص كبير':'👩‍👧','وحدي':'🚶‍♀️','العين':'👁️','الأذن':'👂','الأنف':'👃','اليد':'✋','اللسان':'👅','الجلد':'✋','الماء':'💧','العش':'🪺','الصحراء':'🏜️','البحر':'🌊','الكوب':'🥛','البقرة':'🐄','العصفور':'🐦','السمكة':'🐟','الجمل':'🐪','الحوت':'🐳','ماء وضوء وهواء':'💧 ☀️','حلوى':'🍬','ألعاب':'🧸','مظلة':'☂️','نظارة سباحة':'🥽','مروحة':'🪭','النهار':'☀️','منتصف الليل':'🌙','الخريف':'🍂','دائرة':'●','مربع':'■','مثلث':'▲','مستطيل':'▬','أحمر':'🔴','أزرق':'🔵','أصفر':'🟡','أخضر':'🟢','بنفسجي':'🟣','برتقالي':'🟠'}[bare(opt)]||'';}
