@@ -111,20 +111,13 @@ function learningExtras(card){const wrap=el('div',null,'learning-extras');if(car
 function teachingNotes(lesson){const box=el('details',null,'teaching-notes');box.append(el('summary','دَلِيلُ إِيسُو: الْمُسَاعَدَةُ وَالْإِتْقَانُ'));for(const [label,value]of [['مِعْيَارُ الِاسْتِعْدَادِ',lesson.criterion],['نُبَسِّطُ',lesson.easier],['نَتَحَدَّى',lesson.harder],['نُصَحِّحُ بِلُطْفٍ',lesson.mistake]])if(value)add(box,el('strong',label),el('p',value));return box;}
 
 // Simple handwriting models in board coordinates; parent reviews shape and direction.
-const TRACE_MODELS={
- 'ب':{path:[[650,180],[650,220],[620,260],[560,275],[360,275],[290,260],[260,220],[260,195]],dots:[[450,330]]},
- 'ت':{path:[[650,180],[650,220],[620,260],[560,275],[360,275],[290,260],[260,220],[260,195]],dots:[[425,135],[475,135]]},
- 'ث':{path:[[650,180],[650,220],[620,260],[560,275],[360,275],[290,260],[260,220],[260,195]],dots:[[425,135],[475,135],[450,95]]},
- 'د':{path:[[425,130],[495,155],[555,200],[575,250],[540,275],[470,285],[355,285]],dots:[]},
- 'ذ':{path:[[425,130],[495,155],[555,200],[575,250],[540,275],[470,285],[355,285]],dots:[[450,85]]},
- 'ر':{path:[[565,190],[555,240],[530,285],[480,330],[410,355],[340,360]],dots:[]}
-};
+const TRACE_MODELS={};
 function paintTrace(ctx,letter,stage=0){if(stage>=2)return;const model=TRACE_MODELS[letter];if(!model)return;ctx.save();ctx.strokeStyle=stage===0?'#baa9d5':'#e6dff0';ctx.lineWidth=10;ctx.setLineDash(stage===0?[3,17]:[]);ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();model.path.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=stage===0?'#baa9d5':'#e6dff0';model.dots.forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();});if(stage===0){const [[x,y],[nx,ny]]=model.path,a=Math.atan2(ny-y,nx-x),ex=x+Math.cos(a)*38,ey=y+Math.sin(a)*38;ctx.strokeStyle='#3c9973';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ex,ey);ctx.lineTo(ex-15*Math.cos(a-.55),ey-15*Math.sin(a-.55));ctx.moveTo(ex,ey);ctx.lineTo(ex-15*Math.cos(a+.55),ey-15*Math.sin(a+.55));ctx.stroke();ctx.fillStyle='#3c9973';ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.font='24px sans-serif';ctx.textAlign='center';ctx.fillText('١',x+30,y-10);model.dots.forEach(([dx,dy],i)=>ctx.fillText(digits(i+2),dx+25,dy));}ctx.restore();}
 function tracePreview(letter){const c=el('canvas',null,'trace-preview');c.width=900;c.height=430;c.setAttribute('aria-label','نَمُوذَجُ كِتَابَةِ '+letter);paintTrace(c.getContext('2d'),letter,0);return c;}
 
 /* Reading path 6.0. Text stays live Arabic for correct shaping and accessibility. */
 const ReadingView={
- stages:[['letters','١','أَتَعَرَّفُ عَلَى الْحُرُوفِ','بِطَاقَاتٌ وَأَلْعَابٌ صَوْتِيَّةٌ'],['fatha','٢','أَقْرَأُ بِالْفَتْحَةِ','أَسْمَعُ • أَدْمِجُ • أُرَكِّبُ'],['damma','٣','أَتَعَلَّمُ الضَّمَّةَ','صَوْتٌ جَدِيدٌ، ثُمَّ مُرَاجَعَةٌ'],['kasra','٤','أُمَيِّزُ الْحَرَكَاتِ','كَسْرَةٌ وَتَدْرِيبٌ مُتَنَوِّعٌ'],['sukun','٥','أَكْتَشِفُ السُّكُونَ','نَصِلُ الْحَرْفَ بِمَا قَبْلَهُ'],['patterns','٦','أَقْرَأُ بِثِقَةٍ','نُقَلِّلُ التَّشْكِيلَ بِالتَّدْرِيجِ']],
+ stages:[],
  marks(text,step){let n=0;const count=(text.match(/[َُِْ]/g)||[]).length;const remove=step===3?count:Math.min(step,count);return text.replace(/[َُِْ]/g,m=>n++<remove?'':m);},
  labels(card){return card.reading?.type==='blend'?['أَصْوَاتٌ مُنْفَصِلَةٌ','نَقْرَأُهَا مُتَتَابِعَةً','كَلِمَةٌ كَامِلَةٌ']:card.reading?.type==='fade'?['بِالتَّشْكِيلِ','نُخْفِي حَرَكَةً','نُخْفِي حَرَكَتَيْنِ','دُونَ تَشْكِيلٍ']:[];},
  render(card,step=0){const v=card.reading,box=el('div',null,'reading-card');box.dir='rtl';box.append(el('span',v.label,'reading-eyebrow'));
